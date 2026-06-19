@@ -213,7 +213,6 @@ with col_g1: # Barras na esquerda
                 color='FONTE DE COMPRA',
                 color_discrete_sequence=px.colors.qualitative.Set2
             )
-            # --- CORREÇÃO: FORMATO R$ IGUAL AO VALOR TOTAL ESTIMADO ---
             fig2.update_traces(
                 texttemplate='R$ %{y:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
                 textposition='outside'
@@ -224,7 +223,6 @@ with col_g1: # Barras na esquerda
                 yaxis_tickprefix="R$ ",
                 yaxis_tickformat=",.2f".replace(",", "v").replace(".", ",").replace("v", ".")
             )
-            # --- FIM DA CORREÇÃO ---
             st.plotly_chart(fig2, use_container_width=True)
 
 with col_g2: # Pizza na direita - TÍTULO ALTERADO
@@ -483,7 +481,7 @@ if busca:
     mask = df_exibir.astype(str).apply(
         lambda col: col.str.contains(busca, case=False, na=False)
     ).any(axis=1)
-    df_exibir = df_exibir[mask] # CORRIGIDO: agora filtra mesmo
+    df_exibir = df_exibir
 
 colunas_prioridade = ['UBS', 'ITENS', COLUNA_QTDE, 'Valor Unitário (Estimado)',
                       COLUNA_VALOR_TOTAL, 'FONTE DE COMPRA', 'STATUS ENTREGA', 'COMPLEMENTO']
@@ -491,9 +489,13 @@ colunas_exibir = [c for c in colunas_prioridade if c in df_exibir.columns]
 outras = [c for c in df_exibir.columns if c not in colunas_exibir and c not in ('ENTREGA', 'ENTREGA_NUM')]
 colunas_exibir += outras
 
+# Formata as colunas monetárias pra R$ 18.214,00
+df_exibir[COLUNA_VALOR_TOTAL] = df_exibir[COLUNA_VALOR_TOTAL].apply(brl)
+df_exibir['Valor Unitário (Estimado)'] = df_exibir['Valor Unitário (Estimado)'].apply(brl)
+
 config_colunas = {
-    'Valor Unitário (Estimado)': st.column_config.NumberColumn("Valor Unit.", format="R$ %.2f"),
-    COLUNA_VALOR_TOTAL: st.column_config.NumberColumn("Valor Total", format="R$ %.2f"),
+    'Valor Unitário (Estimado)': st.column_config.TextColumn("Valor Unit."),
+    COLUNA_VALOR_TOTAL: st.column_config.TextColumn("Valor Total"),
     COLUNA_QTDE: st.column_config.NumberColumn("Qtde", format="%d"),
     'ITENS': st.column_config.TextColumn("Descrição do Item", width="large"),
     'UBS': st.column_config.TextColumn("UBS", width="medium"),
