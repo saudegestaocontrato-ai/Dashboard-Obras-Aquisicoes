@@ -317,115 +317,6 @@ else:
     st.info("Dados insuficientes para ranking")
 
 st.divider()
-
-st.subheader("📊 Comparativo de Status por UBS")
-
-if 'UBS' in df.columns and 'STATUS ENTREGA' in df.columns:
-    status_ubs = df.groupby(['UBS', 'STATUS ENTREGA']).size().reset_index(name='Quantidade')
-
-    fig_status = px.bar(
-        status_ubs,
-        x='UBS',
-        y='Quantidade',
-        color='STATUS ENTREGA',
-        title="Quantidade de Itens por UBS e Status",
-        color_discrete_map=CORES_STATUS,
-        barmode='group',
-        text='Quantidade'
-    )
-    fig_status.update_traces(textposition='outside')
-    fig_status.update_layout(xaxis_tickangle=-45, height=450)
-    st.plotly_chart(fig_status, use_container_width=True)
-else:
-    st.info("Dados insuficientes para comparativo")
-
-st.divider()
-
-st.subheader("🚦 Controle de Prazos - Semáforo por UBS")
-
-@st.cache_data
-def buscar_dias_vencimento_por_ubs():
-    try:
-        xls = pd.ExcelFile(ARQUIVO)
-        dados_prazos = []
-
-        for aba in xls.sheet_names:
-            if 'RESUMO' in aba.upper() or aba.strip() == 'Planilha1':
-                continue
-
-            df_raw = pd.read_excel(ARQUIVO, sheet_name=aba, header=None)
-
-            try:
-                dias_ubs = df_raw.iloc[2, 14]
-                dias_ubs = pd.to_numeric(dias_ubs, errors='coerce')
-            except:
-                dias_ubs = None
-
-            if pd.notna(dias_ubs):
-                df_dados = df_original[df_original['UBS'] == aba]
-                qtd_itens = len(df_dados)
-
-                dados_prazos.append({
-                    'UBS': aba,
-                    'DIAS_VENCIMENTO': int(dias_ubs),
-                    'QTD_ITENS': qtd_itens
-                })
-
-        df_venc = pd.DataFrame(dados_prazos)
-
-        if not df_venc.empty:
-            df_venc['STATUS_PRAZO'] = df_venc['DIAS_VENCIMENTO'].apply(
-                lambda x: 'Finalizado' if x == 0 else (
-                    'Super Alerta' if x <= 30 else (
-                        'Alerta' if x <= 60 else 'No Prazo'
-                    )
-                )
-            )
-        return df_venc
-    except Exception as e:
-        st.error(f"Erro ao buscar prazos: {e}")
-        return pd.DataFrame()
-
-df_prazos_ubs = buscar_dias_vencimento_por_ubs()
-
-if not df_prazos_ubs.empty:
-    if ubs_selecionada:
-        df_prazos_ubs = df_prazos_ubs[df_prazos_ubs['UBS'].isin(ubs_selecionada)]
-
-    finalizado = df_prazos_ubs[df_prazos_ubs['STATUS_PRAZO'] == 'Finalizado']
-    super_alerta = df_prazos_ubs[df_prazos_ubs['STATUS_PRAZO'] == 'Super Alerta']
-    alerta = df_prazos_ubs[df_prazos_ubs['STATUS_PRAZO'] == 'Alerta']
-    no_prazo = df_prazos_ubs[df_prazos_ubs['STATUS_PRAZO'] == 'No Prazo']
-
-    col_p1, col_p2, col_p3, col_p4 = st.columns(4)
-
-    with col_p1:
-        st.markdown(f"<div style='padding:10px; background-color:{CORES_PRAZO['Finalizado']}; border-radius:5px; text-align:center;'>"
-                    f"<h3 style='color:white; margin:0;'>⚫ {len(finalizado)}</h3>"
-                    f"<p style='color:white; margin:0;'>Finalizado<br>0 dias</p></div>",
-                    unsafe_allow_html=True)
-
-    with col_p2:
-        st.markdown(f"<div style='padding:10px; background-color:{CORES_PRAZO['Super Alerta']}; border-radius:5px; text-align:center;'>"
-                    f"<h3 style='color:white; margin:0;'>🔴 {len(super_alerta)}</h3>"
-                    f"<p style='color:white; margin:0;'>Super Alerta<br>1 a 30 dias</p></div>",
-                    unsafe_allow_html=True)
-
-    with col_p3:
-        st.markdown(f"<div style='padding:10px; background-color:{CORES_PRAZO['Alerta']}; border-radius:5px; text-align:center;'>"
-                    f"<h3 style='color:black; margin:0;'>🟡 {len(alerta)}</h3>"
-                    f"<p style='color:black; margin:0;'>Alerta<br>31 a 60 dias</p></div>",
-                    unsafe_allow_html=True)
-
-    with col_p4:
-        st.markdown(f"<div style='padding:10px; background-color:{CORES_PRAZO['No Prazo']}; border-radius:5px; text-align:center;'>"
-                    f"<h3 style='color:white; margin:0;'>🟢 {len(no_prazo)}</h3>"
-                    f"<p style='color:white; margin:0;'>No Prazo<br>> 60 dias</p></div>",
-                    unsafe_allow_html=True)
-else:
-    st.info("Célula O3 com dias de vencimento não encontrada nas abas do Excel.")
-
-st.divider()
 st.subheader(
     f"Dados Detalhados — {len(df)} itens | "
     f"{int(qtde_total):,} unidades | "
@@ -438,7 +329,7 @@ if busca:
     mask = df_exibir.astype(str).apply(
         lambda col: col.str.contains(busca, case=False, na=False)
     ).any(axis=1)
-    df_exibir = df_exibir[mask]
+    df_exibir = df_exibir
 
 colunas_prioridade = ['UBS', 'ITENS', COLUNA_QTDE, 'Valor Unitário (Estimado)',
                       COLUNA_VALOR_TOTAL, 'FONTE DE COMPRA', 'STATUS ENTREGA', 'COMPLEMENTO']
@@ -484,7 +375,7 @@ st.download_button(
 )
 
 st.divider()
-st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.2 - Visual Clean")
+st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.3 - Clean")
 
 if 'last_refresh' not in st.session_state:
     st.session_state.last_refresh = time.time()
