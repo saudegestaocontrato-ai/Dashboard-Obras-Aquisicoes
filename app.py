@@ -194,7 +194,7 @@ st.divider()
 
 col_g1, col_g2 = st.columns(2)
 
-with col_g1: # Barras na esquerda
+with col_g1: # Barras na esquerda - GRÁFICO CORRIGIDO
     if 'FONTE DE COMPRA' in df.columns and COLUNA_VALOR_TOTAL in df.columns:
         df_fonte = df[df['FONTE DE COMPRA'].notna() & (df['FONTE DE COMPRA'].astype(str).str.strip()!= '')]
         if not df_fonte.empty:
@@ -204,17 +204,20 @@ with col_g1: # Barras na esquerda
    .reset_index()
    .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
             )
+            
+            # Força formatação BR nos textos das barras
+            soma_valor['texto_br'] = soma_valor[COLUNA_VALOR_TOTAL].apply(brl)
+            
             fig2 = px.bar(
                 soma_valor,
                 x='FONTE DE COMPRA',
                 y=COLUNA_VALOR_TOTAL,
                 title="Valor Total por Fonte de Compra",
-                text_auto=True,
+                text='texto_br',
                 color='FONTE DE COMPRA',
                 color_discrete_sequence=px.colors.qualitative.Set2
             )
             fig2.update_traces(
-                texttemplate='R$ %{y:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
                 textposition='outside'
             )
             fig2.update_layout(
