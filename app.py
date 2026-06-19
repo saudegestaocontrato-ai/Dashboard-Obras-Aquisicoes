@@ -194,19 +194,19 @@ st.divider()
 
 col_g1, col_g2 = st.columns(2)
 
-with col_g1: # Barras na esquerda
+with col_g1:
     if 'FONTE DE COMPRA' in df.columns and COLUNA_VALOR_TOTAL in df.columns:
         df_fonte = df[df['FONTE DE COMPRA'].notna() & (df['FONTE DE COMPRA'].astype(str).str.strip()!= '')]
         if not df_fonte.empty:
             soma_valor = (
                 df_fonte.groupby('FONTE DE COMPRA')[COLUNA_VALOR_TOTAL]
-   .sum()
-   .reset_index()
-   .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
+  .sum()
+  .reset_index()
+  .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
             )
-            
+
             soma_valor['texto_br'] = soma_valor[COLUNA_VALOR_TOTAL].apply(brl)
-            
+
             fig2 = px.bar(
                 soma_valor,
                 x='FONTE DE COMPRA',
@@ -227,7 +227,7 @@ with col_g1: # Barras na esquerda
             )
             st.plotly_chart(fig2, use_container_width=True)
 
-with col_g2: # Pizza na direita
+with col_g2:
     if 'STATUS ENTREGA' in df.columns:
         contagem = df['STATUS ENTREGA'].value_counts().reset_index()
         contagem.columns = ['Status', 'Qtd Itens']
@@ -299,9 +299,9 @@ if 'STATUS ENTREGA' in df.columns and COLUNA_VALOR_TOTAL in df.columns and 'ITEN
         cols_ranking = ['UBS', 'ITENS', COLUNA_QTDE, COLUNA_VALOR_TOTAL, 'STATUS ENTREGA']
         if 'Valor Unitário (Estimado)' in pendentes.columns:
             cols_ranking.insert(3, 'Valor Unitário (Estimado)')
-        
+
         ranking = pendentes.nlargest(5, COLUNA_VALOR_TOTAL)[cols_ranking]
-        
+
         config_ranking = {
             COLUNA_VALOR_TOTAL: st.column_config.NumberColumn("Valor Total", format="R$ %.2f"),
             COLUNA_QTDE: st.column_config.NumberColumn("Qtde", format="%d"),
@@ -309,7 +309,7 @@ if 'STATUS ENTREGA' in df.columns and COLUNA_VALOR_TOTAL in df.columns and 'ITEN
         }
         if 'Valor Unitário (Estimado)' in ranking.columns:
             config_ranking['Valor Unitário (Estimado)'] = st.column_config.NumberColumn("Valor Unit.", format="R$ %.2f")
-            
+
         st.dataframe(ranking, use_container_width=True, hide_index=True, column_config=config_ranking)
     else:
         st.success("Todos os itens foram finalizados!")
@@ -422,40 +422,6 @@ if not df_prazos_ubs.empty:
                     f"<h3 style='color:white; margin:0;'>🟢 {len(no_prazo)}</h3>"
                     f"<p style='color:white; margin:0;'>No Prazo<br>> 60 dias</p></div>",
                     unsafe_allow_html=True)
-
-    st.markdown("### Detalhes por UBS")
-
-    if not super_alerta.empty:
-        st.error("**🔴 SUPER ALERTA - UBS com prazo ≤ 30 dias:**")
-        st.dataframe(super_alerta[['UBS', 'DIAS_VENCIMENTO', 'QTD_ITENS']], hide_index=True,
-                     column_config={
-                         'DIAS_VENCIMENTO': st.column_config.NumberColumn("Dias Restantes", format="%d dias"),
-                         'QTD_ITENS': st.column_config.NumberColumn("Qtd Itens", format="%d")
-                     })
-
-    if not alerta.empty:
-        st.warning("**🟡 ALERTA - UBS com prazo 31 a 60 dias:**")
-        st.dataframe(alerta[['UBS', 'DIAS_VENCIMENTO', 'QTD_ITENS']], hide_index=True,
-                     column_config={
-                         'DIAS_VENCIMENTO': st.column_config.NumberColumn("Dias Restantes", format="%d dias"),
-                         'QTD_ITENS': st.column_config.NumberColumn("Qtd Itens", format="%d")
-                     })
-
-    if not no_prazo.empty:
-        st.success("**🟢 NO PRAZO - UBS com prazo > 60 dias:**")
-        st.dataframe(no_prazo[['UBS', 'DIAS_VENCIMENTO', 'QTD_ITENS']], hide_index=True,
-                     column_config={
-                         'DIAS_VENCIMENTO': st.column_config.NumberColumn("Dias Restantes", format="%d dias"),
-                         'QTD_ITENS': st.column_config.NumberColumn("Qtd Itens", format="%d")
-                     })
-
-    if not finalizado.empty:
-        with st.expander(f"⚫ Ver {len(finalizado)} UBS finalizadas"):
-            st.dataframe(finalizado[['UBS', 'DIAS_VENCIMENTO', 'QTD_ITENS']], hide_index=True,
-                         column_config={
-                             'DIAS_VENCIMENTO': st.column_config.NumberColumn("Dias Restantes", format="%d dias"),
-                             'QTD_ITENS': st.column_config.NumberColumn("Qtd Itens", format="%d")
-                         })
 else:
     st.info("Célula O3 com dias de vencimento não encontrada nas abas do Excel.")
 
@@ -472,7 +438,7 @@ if busca:
     mask = df_exibir.astype(str).apply(
         lambda col: col.str.contains(busca, case=False, na=False)
     ).any(axis=1)
-    df_exibir = df_exibir
+    df_exibir = df_exibir[mask]
 
 colunas_prioridade = ['UBS', 'ITENS', COLUNA_QTDE, 'Valor Unitário (Estimado)',
                       COLUNA_VALOR_TOTAL, 'FONTE DE COMPRA', 'STATUS ENTREGA', 'COMPLEMENTO']
@@ -480,7 +446,6 @@ colunas_exibir = [c for c in colunas_prioridade if c in df_exibir.columns]
 outras = [c for c in df_exibir.columns if c not in colunas_exibir and c not in ('ENTREGA', 'ENTREGA_NUM')]
 colunas_exibir += outras
 
-# Formata as colunas monetárias pra R$ 18.214,00
 if COLUNA_VALOR_TOTAL in df_exibir.columns:
     df_exibir[COLUNA_VALOR_TOTAL] = df_exibir[COLUNA_VALOR_TOTAL].apply(brl)
 if 'Valor Unitário (Estimado)' in df_exibir.columns:
@@ -519,7 +484,7 @@ st.download_button(
 )
 
 st.divider()
-st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.1 - Heatmap Removido")
+st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.2 - Visual Clean")
 
 if 'last_refresh' not in st.session_state:
     st.session_state.last_refresh = time.time()
