@@ -194,7 +194,7 @@ st.divider()
 
 col_g1, col_g2 = st.columns(2)
 
-with col_g1: # Barras na esquerda - GRÁFICO CORRIGIDO
+with col_g1: # Barras na esquerda
     if 'FONTE DE COMPRA' in df.columns and COLUNA_VALOR_TOTAL in df.columns:
         df_fonte = df[df['FONTE DE COMPRA'].notna() & (df['FONTE DE COMPRA'].astype(str).str.strip()!= '')]
         if not df_fonte.empty:
@@ -205,7 +205,6 @@ with col_g1: # Barras na esquerda - GRÁFICO CORRIGIDO
    .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
             )
             
-            # Força formatação BR nos textos das barras
             soma_valor['texto_br'] = soma_valor[COLUNA_VALOR_TOTAL].apply(brl)
             
             fig2 = px.bar(
@@ -228,7 +227,7 @@ with col_g1: # Barras na esquerda - GRÁFICO CORRIGIDO
             )
             st.plotly_chart(fig2, use_container_width=True)
 
-with col_g2: # Pizza na direita - TÍTULO ALTERADO
+with col_g2: # Pizza na direita
     if 'STATUS ENTREGA' in df.columns:
         contagem = df['STATUS ENTREGA'].value_counts().reset_index()
         contagem.columns = ['Status', 'Qtd Itens']
@@ -337,26 +336,6 @@ if 'UBS' in df.columns and 'STATUS ENTREGA' in df.columns:
     fig_status.update_traces(textposition='outside')
     fig_status.update_layout(xaxis_tickangle=-45, height=450)
     st.plotly_chart(fig_status, use_container_width=True)
-
-    pivot_status = status_ubs.pivot(index='UBS', columns='STATUS ENTREGA', values='Quantidade').fillna(0)
-
-    fig_heatmap = go.Figure(data=go.Heatmap(
-        z=pivot_status.values,
-        x=pivot_status.columns,
-        y=pivot_status.index,
-        colorscale='RdYlGn',
-        text=pivot_status.values,
-        texttemplate="%{text}",
-        textfont={"size":12},
-        hovertemplate='UBS: %{y}<br>Status: %{x}<br>Qtd: %{z}<extra></extra>'
-    ))
-    fig_heatmap.update_layout(
-        title="Heatmap: Concentração de Status por UBS",
-        xaxis_title="Status de Entrega",
-        yaxis_title="UBS",
-        height=300
-    )
-    st.plotly_chart(fig_heatmap, use_container_width=True)
 else:
     st.info("Dados insuficientes para comparativo")
 
@@ -540,7 +519,7 @@ st.download_button(
 )
 
 st.divider()
-st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.0 - Título Gráfico Pizza Atualizado")
+st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.1 - Heatmap Removido")
 
 if 'last_refresh' not in st.session_state:
     st.session_state.last_refresh = time.time()
