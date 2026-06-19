@@ -294,12 +294,21 @@ st.subheader("💰 Top 5 Itens Mais Caros Ainda Pendentes")
 if 'STATUS ENTREGA' in df.columns and COLUNA_VALOR_TOTAL in df.columns and 'ITENS' in df.columns:
     pendentes = df[df['STATUS ENTREGA']!= '3. Finalizada - Entregue'].copy()
     if not pendentes.empty:
-        ranking = pendentes.nlargest(5, COLUNA_VALOR_TOTAL)[['UBS', 'ITENS', COLUNA_QTDE, COLUNA_VALOR_TOTAL, 'STATUS ENTREGA']]
-        st.dataframe(ranking, use_container_width=True, hide_index=True, column_config={
+        cols_ranking = ['UBS', 'ITENS', COLUNA_QTDE, COLUNA_VALOR_TOTAL, 'STATUS ENTREGA']
+        if 'Valor Unitário (Estimado)' in pendentes.columns:
+            cols_ranking.insert(3, 'Valor Unitário (Estimado)')
+        
+        ranking = pendentes.nlargest(5, COLUNA_VALOR_TOTAL)[cols_ranking]
+        
+        config_ranking = {
             COLUNA_VALOR_TOTAL: st.column_config.NumberColumn("Valor Total", format="R$ %.2f"),
             COLUNA_QTDE: st.column_config.NumberColumn("Qtde", format="%d"),
             'ITENS': st.column_config.TextColumn("Item", width="large")
-        })
+        }
+        if 'Valor Unitário (Estimado)' in ranking.columns:
+            config_ranking['Valor Unitário (Estimado)'] = st.column_config.NumberColumn("Valor Unit.", format="R$ %.2f")
+            
+        st.dataframe(ranking, use_container_width=True, hide_index=True, column_config=config_ranking)
     else:
         st.success("Todos os itens foram finalizados!")
 else:
@@ -490,8 +499,10 @@ outras = [c for c in df_exibir.columns if c not in colunas_exibir and c not in (
 colunas_exibir += outras
 
 # Formata as colunas monetárias pra R$ 18.214,00
-df_exibir[COLUNA_VALOR_TOTAL] = df_exibir[COLUNA_VALOR_TOTAL].apply(brl)
-df_exibir['Valor Unitário (Estimado)'] = df_exibir['Valor Unitário (Estimado)'].apply(brl)
+if COLUNA_VALOR_TOTAL in df_exibir.columns:
+    df_exibir[COLUNA_VALOR_TOTAL] = df_exibir[COLUNA_VALOR_TOTAL].apply(brl)
+if 'Valor Unitário (Estimado)' in df_exibir.columns:
+    df_exibir['Valor Unitário (Estimado)'] = df_exibir['Valor Unitário (Estimado)'].apply(brl)
 
 config_colunas = {
     'Valor Unitário (Estimado)': st.column_config.TextColumn("Valor Unit."),
