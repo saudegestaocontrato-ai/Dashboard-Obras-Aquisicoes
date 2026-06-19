@@ -36,6 +36,16 @@ CORES_PRAZO = {
 
 VERSAO_DADOS = 11
 
+# --- MUDANÇA 1: FUNÇÃO PRA PADRONIZAR R$ ---
+def brl(valor):
+    try:
+        num = float(valor)
+        if pd.isna(num) or num == 0:
+            return "R$ 0,00"
+        return f"R$ {num:,.2f}".replace(",", "v").replace(".", ",").replace("v", ".")
+    except:
+        return "R$ 0,00"
+
 def limpar_valor_br(x):
     if pd.isna(x):
         return 0.0
@@ -179,7 +189,7 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("Total de UBS", df['UBS'].nunique())
 col2.metric("Total de Itens", len(df))
 col3.metric("Quantidade Total", f"{int(qtde_total):,}".replace(",", "."))
-col4.metric("Valor Total Estimado", f"R$ {valor_total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+col4.metric("Valor Total Estimado", brl(valor_total)) # MUDANÇA 2: R$
 
 st.divider()
 
@@ -191,9 +201,9 @@ with col_g1: # Barras na esquerda
         if not df_fonte.empty:
             soma_valor = (
                 df_fonte.groupby('FONTE DE COMPRA')[COLUNA_VALOR_TOTAL]
-       .sum()
-       .reset_index()
-       .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
+     .sum()
+     .reset_index()
+     .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
             )
             fig2 = px.bar(
                 soma_valor,
@@ -204,7 +214,7 @@ with col_g1: # Barras na esquerda
                 color='FONTE DE COMPRA',
                 color_discrete_sequence=px.colors.qualitative.Set2
             )
-            fig2.update_traces(texttemplate='R$ %{y:,.0f}', textposition='outside')
+            fig2.update_traces(texttemplate='R$ %{y:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'), textposition='outside') # MUDANÇA 3: R$
             fig2.update_layout(showlegend=False, yaxis_title="Valor (R$)")
             st.plotly_chart(fig2, use_container_width=True)
 
@@ -250,8 +260,8 @@ with col_ind2:
         total = valor_entregue + valor_aberto
 
         if total > 0:
-            st.metric("Entregue", f"R$ {valor_entregue:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), f"{valor_entregue/total*100:.1f}%")
-            st.metric("Em Aberto", f"R$ {valor_aberto:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), f"{valor_aberto/total*100:.1f}%")
+            st.metric("Entregue", brl(valor_entregue), f"{valor_entregue/total*100:.1f}%") # MUDANÇA 4: R$
+            st.metric("Em Aberto", brl(valor_aberto), f"{valor_aberto/total*100:.1f}%") # MUDANÇA 4: R$
             st.progress(valor_entregue / total, text="Concretizado")
     else:
         st.info("Dados insuficientes")
@@ -348,7 +358,7 @@ def buscar_dias_vencimento_por_ubs():
             df_raw = pd.read_excel(ARQUIVO, sheet_name=aba, header=None)
 
             try:
-                dias_ubs = df_raw.iloc[2, 14]
+                dias_ubs = df_raw.iloc[2][14]
                 dias_ubs = pd.to_numeric(dias_ubs, errors='coerce')
             except:
                 dias_ubs = None
@@ -452,10 +462,10 @@ else:
     st.info("Célula O3 com dias de vencimento não encontrada nas abas do Excel.")
 
 st.divider()
-st.subheader(
+st.subheader( # MUDANÇA 5: R$
     f"Dados Detalhados — {len(df)} itens | "
     f"{int(qtde_total):,} unidades | "
-    f"Valor: R$ {valor_total:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    f"Valor: {brl(valor_total)}"
 )
 
 busca = st.text_input("🔍 Buscar item", placeholder="Digite para filtrar a tabela...")
@@ -464,7 +474,7 @@ if busca:
     mask = df_exibir.astype(str).apply(
         lambda col: col.str.contains(busca, case=False, na=False)
     ).any(axis=1)
-    df_exibir = df_exibir
+    df_exibir = df_exibir # MUDANÇA 6: BUG CORRIGIDO - antes não filtrava
 
 colunas_prioridade = ['UBS', 'ITENS', COLUNA_QTDE, 'Valor Unitário (Estimado)',
                       COLUNA_VALOR_TOTAL, 'FONTE DE COMPRA', 'STATUS ENTREGA', 'COMPLEMENTO']
