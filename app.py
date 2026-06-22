@@ -291,15 +291,20 @@ if 'STATUS ENTREGA' in df.columns and COLUNA_VALOR_TOTAL in df.columns and 'ITEN
         if 'Valor Unitário (Estimado)' in pendentes.columns:
             cols_ranking.insert(3, 'Valor Unitário (Estimado)')
 
-        ranking = pendentes.nlargest(5, COLUNA_VALOR_TOTAL)[cols_ranking]
+        ranking = pendentes.nlargest(5, COLUNA_VALOR_TOTAL)[cols_ranking].copy()
+        
+        # Formata os valores em BRL antes de exibir
+        ranking[COLUNA_VALOR_TOTAL] = ranking[COLUNA_VALOR_TOTAL].apply(brl)
+        if 'Valor Unitário (Estimado)' in ranking.columns:
+            ranking['Valor Unitário (Estimado)'] = ranking['Valor Unitário (Estimado)'].apply(brl)
 
         config_ranking = {
-            COLUNA_VALOR_TOTAL: st.column_config.NumberColumn("Valor Total", format="R$ %.2f"),
+            COLUNA_VALOR_TOTAL: st.column_config.TextColumn("Valor Total"),
             COLUNA_QTDE: st.column_config.NumberColumn("Qtde", format="%d"),
             'ITENS': st.column_config.TextColumn("Item", width="large")
         }
         if 'Valor Unitário (Estimado)' in ranking.columns:
-            config_ranking['Valor Unitário (Estimado)'] = st.column_config.NumberColumn("Valor Unit.", format="R$ %.2f")
+            config_ranking['Valor Unitário (Estimado)'] = st.column_config.TextColumn("Valor Unit.")
 
         st.dataframe(ranking, use_container_width=True, hide_index=True, column_config=config_ranking)
     else:
@@ -366,4 +371,4 @@ st.download_button(
 )
 
 st.divider()
-st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.8")
+st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.9")
