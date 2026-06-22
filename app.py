@@ -142,9 +142,11 @@ df = df_original.copy()
 st.sidebar.header("Filtros")
 
 if st.sidebar.button("🗑️ Limpar Todos os Filtros", use_container_width=True):
-    for key in ['ubs_filter', 'item_filter', 'status_filter', 'fonte_filter']:
-        if key in st.session_state:
-            del st.session_state[key]
+    st.cache_data.clear()
+    st.session_state.ubs_filter = []
+    st.session_state.item_filter = []
+    st.session_state.status_filter = []
+    st.session_state.fonte_filter = []
     st.rerun()
 
 ubs_selecionada = st.sidebar.multiselect(
@@ -203,9 +205,9 @@ with col_g1:
         if not df_fonte.empty:
             soma_valor = (
                 df_fonte.groupby('FONTE DE COMPRA')[COLUNA_VALOR_TOTAL]
-              .sum()
-              .reset_index()
-              .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
+             .sum()
+             .reset_index()
+             .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
             )
 
             soma_valor['texto_br'] = soma_valor[COLUNA_VALOR_TOTAL].apply(brl)
@@ -364,4 +366,4 @@ st.download_button(
 )
 
 st.divider()
-st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.5")
+st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.6")
