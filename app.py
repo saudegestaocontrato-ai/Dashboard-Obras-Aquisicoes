@@ -34,7 +34,7 @@ CORES_PRAZO = {
     'No Prazo': '#82C45A'
 }
 
-VERSAO_DADOS = 11
+VERSAO_DADOS = 12
 
 def brl(valor):
     try:
@@ -200,9 +200,9 @@ with col_g1:
         if not df_fonte.empty:
             soma_valor = (
                 df_fonte.groupby('FONTE DE COMPRA')[COLUNA_VALOR_TOTAL]
-  .sum()
-  .reset_index()
-  .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
+               .sum()
+               .reset_index()
+               .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
             )
 
             soma_valor['texto_br'] = soma_valor[COLUNA_VALOR_TOTAL].apply(brl)
@@ -223,7 +223,7 @@ with col_g1:
                 showlegend=False,
                 yaxis_title="Valor (R$)",
                 yaxis_tickprefix="R$ ",
-                yaxis_tickformat=",.2f".replace(",", "v").replace(".", ",").replace("v", ".")
+                yaxis_tickformat=",.2f"
             )
             st.plotly_chart(fig2, use_container_width=True)
 
@@ -245,23 +245,9 @@ with col_g2:
 st.divider()
 st.subheader("📈 Indicadores de Gestão de Aquisições")
 
-col_ind1, col_ind2, col_ind3 = st.columns(3)
+col_ind1, col_ind2 = st.columns(2)
 
 with col_ind1:
-    st.markdown("**% Conclusão por UBS**")
-    if 'STATUS ENTREGA' in df.columns and 'UBS' in df.columns:
-        conclusao_ubs = df.groupby('UBS')['STATUS ENTREGA'].apply(
-            lambda x: (x == '3. Finalizada - Entregue').sum() / len(x) * 100 if len(x) > 0 else 0
-        ).reset_index(name='% Concluído')
-
-        for _, row in conclusao_ubs.iterrows():
-            destaque = "🎯 " if row['UBS'] == PARAMETRO_CER else ""
-            st.text(f"{destaque}{row['UBS']}")
-            st.progress(int(row['% Concluído']) / 100, text=f"{row['% Concluído']:.1f}%")
-    else:
-        st.info("Coluna STATUS ENTREGA não encontrada")
-
-with col_ind2:
     st.markdown("**Orçamento: Entregue vs Em Aberto**")
     if 'STATUS ENTREGA' in df.columns and COLUNA_VALOR_TOTAL in df.columns:
         valor_entregue = df[df['STATUS ENTREGA'] == '3. Finalizada - Entregue'][COLUNA_VALOR_TOTAL].sum()
@@ -275,7 +261,7 @@ with col_ind2:
     else:
         st.info("Dados insuficientes")
 
-with col_ind3:
+with col_ind2:
     st.markdown("**🚨 Alertas: Itens em Atenção**")
     if 'STATUS ENTREGA' in df.columns and 'UBS' in df.columns:
         atencao_ubs = df[df['STATUS ENTREGA'] == '1. Atenção - Em cotação'].groupby('UBS').size().reset_index(name='Qtd Atenção')
@@ -329,7 +315,7 @@ if busca:
     mask = df_exibir.astype(str).apply(
         lambda col: col.str.contains(busca, case=False, na=False)
     ).any(axis=1)
-    df_exibir = df_exibir
+    df_exibir = df_exibir[mask]
 
 colunas_prioridade = ['UBS', 'ITENS', COLUNA_QTDE, 'Valor Unitário (Estimado)',
                       COLUNA_VALOR_TOTAL, 'FONTE DE COMPRA', 'STATUS ENTREGA', 'COMPLEMENTO']
@@ -375,7 +361,7 @@ st.download_button(
 )
 
 st.divider()
-st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.3 - Clean")
+st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.4")
 
 if 'last_refresh' not in st.session_state:
     st.session_state.last_refresh = time.time()
