@@ -162,11 +162,11 @@ st.title("📊 Dashboard - Status Obras e Compras de Mobiliário")
 
 if ubs_selecionada:
     ubs_texto = ", ".join([f"**{ubs}**" for ubs in ubs_selecionada])
-    st.markdown(f"**UBS filtrada:** {ubs_texto}")
+    st.markdown(f"**Unidade filtrada:** {ubs_texto}")
     if PARAMETRO_CER in ubs_selecionada:
         st.info(f"📍 Visualizando dados específicos do **{PARAMETRO_CER}**")
 else:
-    st.markdown("**Visão geral:** **Todas as UBS**")
+    st.markdown("**Visão geral:** **Todas as Unidades**")
 
 if 'ITENS' in df.columns:
     lista_itens = sorted(df['ITENS'].dropna().unique())
@@ -366,4 +366,4 @@ st.download_button(
 )
 
 st.divider()
-st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.7")
+st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.8")
