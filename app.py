@@ -27,14 +27,7 @@ CORES_STATUS = {
     'Não informado': '#AEB6BF',
 }
 
-CORES_PRAZO = {
-    'Finalizado': '#95A5A6',
-    'Super Alerta': '#E74C3C',
-    'Alerta': '#F4D03F',
-    'No Prazo': '#82C45A'
-}
-
-VERSAO_DADOS = 12
+VERSAO_DADOS = 13
 
 def brl(valor):
     try:
@@ -139,14 +132,16 @@ df = df_original.copy()
 st.sidebar.header("Filtros")
 
 if st.sidebar.button("🗑️ Limpar Todos os Filtros", use_container_width=True):
-    for key in ['ubs_filter', 'item_filter', 'status_filter', 'fonte_filter']:
-        if key in st.session_state:
-            del st.session_state[key]
+    st.session_state.ubs_filter = []
+    st.session_state.item_filter = []
+    st.session_state.status_filter = []
+    st.session_state.fonte_filter = []
     st.rerun()
 
 ubs_selecionada = st.sidebar.multiselect(
     "Filtrar UBS",
     options=sorted(df['UBS'].unique()),
+    default=[],
     key='ubs_filter'
 )
 
@@ -165,19 +160,19 @@ else:
 
 if 'ITENS' in df.columns:
     lista_itens = sorted(df['ITENS'].dropna().unique())
-    item_selecionado = st.sidebar.multiselect("Filtrar por Item", options=lista_itens, key='item_filter')
+    item_selecionado = st.sidebar.multiselect("Filtrar por Item", options=lista_itens, default=[], key='item_filter')
     if item_selecionado:
         df = df[df['ITENS'].isin(item_selecionado)]
 
 if 'STATUS ENTREGA' in df.columns and df['STATUS ENTREGA'].notna().any():
     opcoes_status = sorted(df['STATUS ENTREGA'].dropna().unique())
-    sel_status = st.sidebar.multiselect("Filtrar STATUS ENTREGA", options=opcoes_status, key='status_filter')
+    sel_status = st.sidebar.multiselect("Filtrar STATUS ENTREGA", options=opcoes_status, default=[], key='status_filter')
     if sel_status:
         df = df[df['STATUS ENTREGA'].isin(sel_status)]
 
 if 'FONTE DE COMPRA' in df.columns and df['FONTE DE COMPRA'].notna().any():
     opcoes_fonte = sorted(df['FONTE DE COMPRA'].dropna().astype(str).unique())
-    sel_fonte = st.sidebar.multiselect("Filtrar FONTE DE COMPRA", options=opcoes_fonte, key='fonte_filter')
+    sel_fonte = st.sidebar.multiselect("Filtrar FONTE DE COMPRA", options=opcoes_fonte, default=[], key='fonte_filter')
     if sel_fonte:
         df = df[df['FONTE DE COMPRA'].isin(sel_fonte)]
 
@@ -200,9 +195,9 @@ with col_g1:
         if not df_fonte.empty:
             soma_valor = (
                 df_fonte.groupby('FONTE DE COMPRA')[COLUNA_VALOR_TOTAL]
-               .sum()
-               .reset_index()
-               .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
+             .sum()
+             .reset_index()
+             .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
             )
 
             soma_valor['texto_br'] = soma_valor[COLUNA_VALOR_TOTAL].apply(brl)
@@ -216,9 +211,7 @@ with col_g1:
                 color='FONTE DE COMPRA',
                 color_discrete_sequence=px.colors.qualitative.Set2
             )
-            fig2.update_traces(
-                textposition='outside'
-            )
+            fig2.update_traces(textposition='outside')
             fig2.update_layout(
                 showlegend=False,
                 yaxis_title="Valor (R$)",
@@ -361,7 +354,7 @@ st.download_button(
 )
 
 st.divider()
-st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.4")
+st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.5")
 
 if 'last_refresh' not in st.session_state:
     st.session_state.last_refresh = time.time()
