@@ -4,10 +4,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 from io import BytesIO
 import time
+import requests
 
 st.set_page_config(page_title="Dashboard Obras", layout="wide")
 
-ARQUIVO = "Status de Obras e Compras de Mobiliário.xlsx"
+ARQUIVO_URL = "https://onedrive.live.com/:x:/g/personal/0fdc4fa293f9651b/IQCqtIBXI6OyTLcUhPFe4n_uASlSBP-lAutuIL6REUySCxQ?rtime=cLQ4sveb3kg&redeem=aHR0cHM6Ly8xZHJ2Lm1zL3gvYy8wZmRjNGZhMjkzZjk2NTFiL0lRQ3F0SUJYSTZPeVRMY1VoUEZlNG5fdUFTbFNCUC1sQXV0dUlMNlJFVXlTQ3hRP2U9NktuV04x&download=1"
+
 COLUNA_VALOR_TOTAL = 'Valor Total (Estimado)'
 COLUNA_QTDE = 'QTDE'
 PARAMETRO_CER = 'CER III'
@@ -27,7 +29,14 @@ CORES_STATUS = {
     'Não informado': '#AEB6BF',
 }
 
-VERSAO_DADOS = 13
+CORES_PRAZO = {
+    'Finalizado': '#95A5A6',
+    'Super Alerta': '#E74C3C',
+    'Alerta': '#F4D03F',
+    'No Prazo': '#82C45A'
+}
+
+VERSAO_DADOS = 12
 
 def brl(valor):
     try:
@@ -54,19 +63,20 @@ def limpar_valor_br(x):
     except:
         return 0.0
 
-@st.cache_data
+@st.cache_data(ttl=180)
 def carregar_dados(v=VERSAO_DADOS):
     import warnings
     warnings.filterwarnings('ignore')
 
-    xls = pd.ExcelFile(ARQUIVO)
+    response = requests.get(ARQUIVO_URL)
+    xls = pd.ExcelFile(BytesIO(response.content))
     todas_abas = []
 
     for aba in xls.sheet_names:
         if 'RESUMO' in aba.upper() or aba.strip() == 'Planilha1':
             continue
 
-        df_raw = pd.read_excel(ARQUIVO, sheet_name=aba, header=None)
+        df_raw = pd.read_excel(BytesIO(response.content), sheet_name=aba, header=None)
 
         linha_cabecalho = None
         for i, row in df_raw.iterrows():
@@ -76,7 +86,7 @@ def carregar_dados(v=VERSAO_DADOS):
         if linha_cabecalho is None:
             continue
 
-        df = pd.read_excel(ARQUIVO, sheet_name=aba, header=linha_cabecalho)
+        df = pd.read_excel(BytesIO(response.content), sheet_name=aba, header=linha_cabecalho)
         df.columns = df.columns.astype(str).str.replace('\n', ' ').str.strip()
         df.dropna(axis=1, how='all', inplace=True)
 
@@ -132,16 +142,14 @@ df = df_original.copy()
 st.sidebar.header("Filtros")
 
 if st.sidebar.button("🗑️ Limpar Todos os Filtros", use_container_width=True):
-    st.session_state.ubs_filter = []
-    st.session_state.item_filter = []
-    st.session_state.status_filter = []
-    st.session_state.fonte_filter = []
+    for key in ['ubs_filter', 'item_filter', 'status_filter', 'fonte_filter']:
+        if key in st.session_state:
+            del st.session_state[key]
     st.rerun()
 
 ubs_selecionada = st.sidebar.multiselect(
     "Filtrar UBS",
     options=sorted(df['UBS'].unique()),
-    default=[],
     key='ubs_filter'
 )
 
@@ -160,19 +168,19 @@ else:
 
 if 'ITENS' in df.columns:
     lista_itens = sorted(df['ITENS'].dropna().unique())
-    item_selecionado = st.sidebar.multiselect("Filtrar por Item", options=lista_itens, default=[], key='item_filter')
+    item_selecionado = st.sidebar.multiselect("Filtrar por Item", options=lista_itens, key='item_filter')
     if item_selecionado:
         df = df[df['ITENS'].isin(item_selecionado)]
 
 if 'STATUS ENTREGA' in df.columns and df['STATUS ENTREGA'].notna().any():
     opcoes_status = sorted(df['STATUS ENTREGA'].dropna().unique())
-    sel_status = st.sidebar.multiselect("Filtrar STATUS ENTREGA", options=opcoes_status, default=[], key='status_filter')
+    sel_status = st.sidebar.multiselect("Filtrar STATUS ENTREGA", options=opcoes_status, key='status_filter')
     if sel_status:
         df = df[df['STATUS ENTREGA'].isin(sel_status)]
 
 if 'FONTE DE COMPRA' in df.columns and df['FONTE DE COMPRA'].notna().any():
     opcoes_fonte = sorted(df['FONTE DE COMPRA'].dropna().astype(str).unique())
-    sel_fonte = st.sidebar.multiselect("Filtrar FONTE DE COMPRA", options=opcoes_fonte, default=[], key='fonte_filter')
+    sel_fonte = st.sidebar.multiselect("Filtrar FONTE DE COMPRA", options=opcoes_fonte, key='fonte_filter')
     if sel_fonte:
         df = df[df['FONTE DE COMPRA'].isin(sel_fonte)]
 
@@ -195,9 +203,9 @@ with col_g1:
         if not df_fonte.empty:
             soma_valor = (
                 df_fonte.groupby('FONTE DE COMPRA')[COLUNA_VALOR_TOTAL]
-             .sum()
-             .reset_index()
-             .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
+              .sum()
+              .reset_index()
+              .sort_values(COLUNA_VALOR_TOTAL, ascending=False)
             )
 
             soma_valor['texto_br'] = soma_valor[COLUNA_VALOR_TOTAL].apply(brl)
@@ -211,7 +219,9 @@ with col_g1:
                 color='FONTE DE COMPRA',
                 color_discrete_sequence=px.colors.qualitative.Set2
             )
-            fig2.update_traces(textposition='outside')
+            fig2.update_traces(
+                textposition='outside'
+            )
             fig2.update_layout(
                 showlegend=False,
                 yaxis_title="Valor (R$)",
@@ -355,10 +365,3 @@ st.download_button(
 
 st.divider()
 st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.5")
-
-if 'last_refresh' not in st.session_state:
-    st.session_state.last_refresh = time.time()
-
-if time.time() - st.session_state.last_refresh > 180:
-    st.session_state.last_refresh = time.time()
-    st.rerun()
