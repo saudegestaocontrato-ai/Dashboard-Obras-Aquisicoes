@@ -190,7 +190,7 @@ qtde_total = df[COLUNA_QTDE].sum() if COLUNA_QTDE in df.columns else 0
 valor_total = df[COLUNA_VALOR_TOTAL].sum() if COLUNA_VALOR_TOTAL in df.columns else 0
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Total de UBS", df['UBS'].nunique())
+col1.metric("Total de Unidades", df['UBS'].nunique())
 col2.metric("Total de Itens", len(df))
 col3.metric("Quantidade Total", f"{int(qtde_total):,}".replace(",", "."))
 col4.metric("Valor Total Estimado", brl(valor_total))
@@ -320,7 +320,7 @@ if busca:
     mask = df_exibir.astype(str).apply(
         lambda col: col.str.contains(busca, case=False, na=False)
     ).any(axis=1)
-    df_exibir = df_exibir[mask]
+    df_exibir = df_exibir
 
 colunas_prioridade = ['UBS', 'ITENS', COLUNA_QTDE, 'Valor Unitário (Estimado)',
                       COLUNA_VALOR_TOTAL, 'FONTE DE COMPRA', 'STATUS ENTREGA', 'COMPLEMENTO']
@@ -366,4 +366,4 @@ st.download_button(
 )
 
 st.divider()
-st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.6")
+st.caption(f"🔄 Dashboard atualiza automaticamente a cada 3 minutos | v3.7")
